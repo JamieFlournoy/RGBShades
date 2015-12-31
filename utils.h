@@ -1,22 +1,24 @@
 // Assorted useful functions and variables
 
-// Global variables
 boolean effectInit = false; // indicates if a pattern has been recently switched
 uint16_t effectDelay = 0; // time between automatic effect changes
 unsigned long effectMillis = 0; // store the time of last effect function run
 unsigned long cycleMillis = 0; // store the time of last effect change
 unsigned long currentMillis; // store current loop's millis value
 unsigned long hueMillis; // store time of last hue change
-unsigned long eepromMillis; // store time of last setting change
-byte currentEffect = 0; // index to the currently running effect
-boolean autoCycle = true; // flag for automatic effect changes
-boolean eepromOutdated = false; // flag for when EEPROM may need to be updated
-byte currentBrightness = STARTBRIGHTNESS; // 0-255 will be scaled to 0-MAXBRIGHTNESS
+unsigned long clockMillis;
+time_t t;
+String timeString = "";
 
-CRGBPalette16 currentPalette(RainbowColors_p); // global palette storage
+byte currentEffect = 0; // index to the currently running effect
+boolean autoCycle = false; // flag for automatic effect changes
+
+CRGBPalette16 currentPalette(RainbowColors_p); // global pallete storage
+
 
 typedef void (*functionList)(); // definition for list of effect function pointers
-extern const byte numEffects;
+#define numEffects (sizeof(effectList) / sizeof(effectList[0]))
+
 
 // Increment the global hue value for functions that use it
 byte cycleHue = 0;
@@ -144,23 +146,33 @@ void loadCharBuffer(byte character) {
 
 // Fetch a character value from a text string in flash
 char loadStringChar(byte string, byte character) {
-  return (char) pgm_read_byte(currentStringAddress + character);
-}
 
-// write EEPROM value if it's different from stored value
-void updateEEPROM(byte location, byte value) {
-  if (EEPROM.read(location) != value) EEPROM.write(location, value);
-}
-
-// Write settings to EEPROM if necessary
-void checkEEPROM() {
-  if (eepromOutdated) {
-    if (currentMillis - eepromMillis > EEPROMDELAY) {
-      updateEEPROM(0, 99);
-      updateEEPROM(1, currentEffect);
-      updateEEPROM(2, autoCycle);
-      updateEEPROM(3, currentBrightness);
-      eepromOutdated = false;
-    }
+  if (string == 99) {
+    return timeString.charAt(character);
+  } else {
+    return (char) pgm_read_byte(currentStringAddress + character);
   }
 }
+
+
+void formatTimeString() {
+  timeString = "";
+  t = now();
+  
+  timeString += dayStr(weekday(t));
+  timeString += " ";
+  timeString += monthShortStr(month(t));
+  timeString += " ";
+  timeString += String(day(t));
+  timeString += " ";
+  
+  if (hourFormat12(t) < 10) timeString += "0";
+  timeString += String(hourFormat12(t));
+  timeString += ":";
+  if (minute(t) < 10) timeString += "0";
+  timeString += String(minute(t));
+  if (isAM(t)) timeString += " AM  "; else timeString += " PM  ";
+}
+
+
+
