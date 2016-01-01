@@ -7,11 +7,17 @@ unsigned long cycleMillis = 0; // store the time of last effect change
 unsigned long currentMillis; // store current loop's millis value
 unsigned long hueMillis; // store time of last hue change
 unsigned long clockMillis;
-time_t t;
+//time_t t;
 String timeString = "0000";
 
 byte currentEffect = 0; // index to the currently running effect
 boolean autoCycle = false; // flag for automatic effect changes
+byte savedCurrentEffect = 0; // currentEffect, saved at the top of the minute.
+
+#define NORMAL_TIME 0
+#define COUNTDOWN_TIME 1
+#define CONFETTI_TIME 2
+byte specialTimeCode = NORMAL_TIME;
 
 CRGBPalette16 currentPalette(RainbowColors_p); // global pallete storage
 
@@ -119,6 +125,7 @@ void confirmBlink() {
 
 }
 
+/*
 // Determine flash address of text string
 unsigned int currentStringAddress = 0;
 void selectFlashString(byte string) {
@@ -140,7 +147,6 @@ void loadCharBuffer(byte character) {
   for (byte i = 0; i < 5; i++) {
     charBuffer[i] = pgm_read_byte(Font[mappedCharacter]+i);
   }
-
 }
 
 // Fetch a character value from a text string in flash
@@ -152,6 +158,7 @@ char loadStringChar(byte string, byte character) {
     return (char) pgm_read_byte(currentStringAddress + character);
   }
 }
+*/
 
 
 /*
@@ -178,12 +185,52 @@ void formatTimeString() {
 }
 */
 
-void formatTimeString() {
-  timeString = "";
-  t = now();
-  if (minute(t) < 10) timeString += "0";
-  timeString += String(minute(t));
-  // timeString += ":";
-  if (second(t) < 10) timeString += "0";
-  timeString += String(second(t));
+#define NORMAL_TIME 0
+#define COUNTDOWN_TIME 1
+#define CONFETTI_TIME 2
+
+void setSpecialTimeCode(time_t t) {
+  if (hour(t) == 23 && minute(t) > 50) {
+    specialTimeCode = COUNTDOWN_TIME;
+    return;
+  }
+  if (hour(t) == 0 && minute(t) == 0) {
+    specialTimeCode = CONFETTI_TIME;
+    return;
+  }
+
+/*
+  // test hack
+  if (second(t) < 3) {
+    specialTimeCode = CONFETTI_TIME;
+    return;
+  }
+  if (second(t) > 50) {
+    specialTimeCode = COUNTDOWN_TIME;
+    return;
+  }
+*/
+  specialTimeCode = NORMAL_TIME;
 }
+
+void formatTimeString(time_t t) {
+  timeString = "";
+
+  //byte hours12 = hourFormat12(t);
+  byte minutes = minute(t);
+  byte seconds = second(t);
+
+  if (specialTimeCode == COUNTDOWN_TIME) {
+    minutes = 60 - minutes;
+    seconds = 60 - seconds;
+  }
+
+  if (minutes < 10) timeString += "0";
+  timeString += String(minutes);
+
+  // timeString += ":";
+
+  if (seconds < 10) timeString += "0";
+  timeString += String(seconds);
+}
+

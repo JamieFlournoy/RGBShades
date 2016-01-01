@@ -42,7 +42,7 @@
 #define STARTBRIGHTNESS 127
 byte currentBrightness = STARTBRIGHTNESS; // 0-255 will be scaled to 0-MAXBRIGHTNESS
 
-#include <Time.h> // Time Library
+#include <Time.h> // Time Librarycu
 #include <Wire.h> // Wire for RTC
 #include <DS1307RTC.h> // DS3231/ChronoDot works like DS1307
 
@@ -52,7 +52,7 @@ byte currentBrightness = STARTBRIGHTNESS; // 0-255 will be scaled to 0-MAXBRIGHT
 // Include FastLED library and other useful files
 #include <FastLED.h>
 #include "messages.h"
-#include "font.h"
+// #include "font.h"
 #include "sevenseg.h"
 #include "XYmap.h"
 #include "utils.h"
@@ -89,10 +89,14 @@ void setup() {
 // list of functions that will be displayed
 functionList effectList[] = {
   showMinutesAndSecondsSolidColor,
-  showMinutesAndSecondsRainbow 
-// scrollTextZero,
-// scrollTextOne
-                             };
+//  showMinutesAndSecondsRainbow,
+  // these are activated by special times from the RTC
+  // plasma,
+  // glitter,
+  confetti
+};
+#define TIMER_INDEX 0
+#define CONFETTI_INDEX 1
 
 // Timing parameters
 #define cycleTime 15000
@@ -102,6 +106,7 @@ functionList effectList[] = {
 void loop()
 {
   currentMillis = millis(); // save the current timer value
+  random16_add_entropy(currentMillis % 37);
   updateButtons(); // read, debounce, and process the buttons
 
   // Check the mode button (for switching between effects)
@@ -160,20 +165,27 @@ void loop()
 
   FastLED.show(); // send the contents of the led memory to the LEDs
 
-
-
   if (currentMillis - clockMillis > 1000) {
     clockMillis = currentMillis;
-    formatTimeString();
+    time_t t = now();
+    setSpecialTimeCode(t);
+    formatTimeString(t);
+
+    switch (specialTimeCode) {
+      case COUNTDOWN_TIME:
+        currentEffect = TIMER_INDEX;
+        break;
+      case CONFETTI_TIME:
+        currentEffect = CONFETTI_INDEX;
+        break;
+      case NORMAL_TIME:
+      default:
+        currentEffect = TIMER_INDEX;
+    }
+
     //Serial.begin(9600);
     //Serial.println(timeString);
     //Serial.end();
   }
-
-
 }
-
-
-
-
 
