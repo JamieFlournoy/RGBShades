@@ -8,7 +8,7 @@ unsigned long currentMillis; // store current loop's millis value
 unsigned long hueMillis; // store time of last hue change
 unsigned long clockMillis;
 time_t t;
-String timeString = "";
+String timeString = "0000";
 
 byte currentEffect = 0; // index to the currently running effect
 boolean autoCycle = false; // flag for automatic effect changes
@@ -44,7 +44,6 @@ void fadeAll(byte fadeIncr) {
 
 // Shift all pixels by one, right or left (0 or 1)
 void scrollArray(byte scrollDir) {
-  
     byte scrollX = 0;
     for (byte x = 1; x < kMatrixWidth; x++) {
       if (scrollDir == 0) {
@@ -52,12 +51,12 @@ void scrollArray(byte scrollDir) {
       } else if (scrollDir == 1) {
         scrollX = x - 1;
       }
-      
+
       for (byte y = 0; y < kMatrixHeight; y++) {
         leds[XY(scrollX,y)] = leds[XY(scrollX + scrollDir*2 - 1,y)];
       }
     }
-  
+
 }
 
 
@@ -68,27 +67,27 @@ void selectRandomPalette() {
     case 0:
     currentPalette = CloudColors_p;
     break;
-    
+
     case 1:
     currentPalette = LavaColors_p;
     break;
-    
+
     case 2:
     currentPalette = OceanColors_p;
     break;
-    
+
     case 4:
     currentPalette = ForestColors_p;
     break;
-    
+
     case 5:
     currentPalette = RainbowColors_p;
     break;
-    
+
     case 6:
     currentPalette = PartyColors_p;
     break;
-    
+
     case 7:
     currentPalette = HeatColors_p;
     break;
@@ -137,11 +136,11 @@ void loadCharBuffer(byte character) {
   } else {
     mappedCharacter = 96; // unknown character block
   }
-  
+
   for (byte i = 0; i < 5; i++) {
     charBuffer[i] = pgm_read_byte(Font[mappedCharacter]+i);
   }
-  
+
 }
 
 // Fetch a character value from a text string in flash
@@ -155,24 +154,36 @@ char loadStringChar(byte string, byte character) {
 }
 
 
+/*
 void formatTimeString() {
   timeString = "";
   t = now();
-  
+
   timeString += dayStr(weekday(t));
   timeString += " ";
   timeString += monthShortStr(month(t));
   timeString += " ";
   timeString += String(day(t));
   timeString += " ";
-  
+
   if (hourFormat12(t) < 10) timeString += "0";
   timeString += String(hourFormat12(t));
   timeString += ":";
   if (minute(t) < 10) timeString += "0";
   timeString += String(minute(t));
+  timeString += ":";
+  if (second(t) < 10) timeString += "0";
+  timeString += String(second(t));
   if (isAM(t)) timeString += " AM  "; else timeString += " PM  ";
 }
+*/
 
-
-
+void formatTimeString() {
+  timeString = "";
+  t = now();
+  if (minute(t) < 10) timeString += "0";
+  timeString += String(minute(t));
+  // timeString += ":";
+  if (second(t) < 10) timeString += "0";
+  timeString += String(second(t));
+}

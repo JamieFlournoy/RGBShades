@@ -46,24 +46,29 @@ byte currentBrightness = STARTBRIGHTNESS; // 0-255 will be scaled to 0-MAXBRIGHT
 #include <Wire.h> // Wire for RTC
 #include <DS1307RTC.h> // DS3231/ChronoDot works like DS1307
 
+//Use the example program TimeRTCSet (under file->examples->Time)
+// and date +T%s >  /dev/cu.usbserial-DN00M2LG
+
 // Include FastLED library and other useful files
 #include <FastLED.h>
 #include "messages.h"
 #include "font.h"
+#include "sevenseg.h"
 #include "XYmap.h"
 #include "utils.h"
 #include "effects.h"
 #include "buttons.h"
 
 
-
-
 // Runs one time at the start of the program (power up or reset)
 void setup() {
+  Serial.begin(9600); // set baud to 9600
+
+  Serial.println("Hello world!");
 
   // write FastLED configuration data
   FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, LAST_VISIBLE_LED + 1);//.setCorrection(TypicalSMD5050);
-  
+
   // set global brightness value
   FastLED.setBrightness( scale8(STARTBRIGHTNESS, MAXBRIGHTNESS) );
 
@@ -74,21 +79,19 @@ void setup() {
   setSyncProvider(RTC.get); // set sync to use the ChronoDot
   setSyncInterval(10); // sync every 10 seconds if possible
 
-  Serial.begin(9600); // set baud to 9600
-
   // check whether sync worked
-  if(timeStatus()!= timeSet) 
+  if(timeStatus()!= timeSet)
     Serial.println("Unable to sync with the RTC");
   else
     Serial.println("RTC has set the system time");
-
-
-
 }
 
 // list of functions that will be displayed
-functionList effectList[] = {scrollTextZero,
-                             scrollTextOne
+functionList effectList[] = {
+  showMinutesAndSecondsSolidColor,
+  showMinutesAndSecondsRainbow 
+// scrollTextZero,
+// scrollTextOne
                              };
 
 // Timing parameters
@@ -100,61 +103,61 @@ void loop()
 {
   currentMillis = millis(); // save the current timer value
   updateButtons(); // read, debounce, and process the buttons
-  
+
   // Check the mode button (for switching between effects)
   switch(buttonStatus(0)) {
-    
+
     case BTNRELEASED: // button was pressed and released quickly
-      cycleMillis = currentMillis; 
+      cycleMillis = currentMillis;
       if (++currentEffect >= numEffects) currentEffect = 0; // loop to start of effect list
       effectInit = false; // trigger effect initialization when new effect is selected
     break;
-    
+
     case BTNLONGPRESS: // button was held down for a while
       autoCycle = !autoCycle; // toggle auto cycle mode
       confirmBlink(); // one blue blink: auto mode. two red blinks: manual mode.
     break;
-  
+
   }
-  
-  // Check the brightness adjust button  
+
+  // Check the brightness adjust button
   switch(buttonStatus(1)) {
-    
+
     case BTNRELEASED: // button was pressed and released quickly
       currentBrightness += 51; // increase the brightness (wraps to lowest)
       FastLED.setBrightness(scale8(currentBrightness,MAXBRIGHTNESS));
     break;
-    
+
     case BTNLONGPRESS: // button was held down for a while
       currentBrightness = STARTBRIGHTNESS; // reset brightness to startup value
       FastLED.setBrightness(scale8(currentBrightness,MAXBRIGHTNESS));
     break;
-  
+
   }
-  
+
   // switch to a new effect every cycleTime milliseconds
   if (currentMillis - cycleMillis > cycleTime && autoCycle == true) {
-    cycleMillis = currentMillis; 
+    cycleMillis = currentMillis;
     if (++currentEffect >= numEffects) currentEffect = 0; // loop to start of effect list
     effectInit = false; // trigger effect initialization when new effect is selected
   }
-  
+
   // increment the global hue value every hueTime milliseconds
   if (currentMillis - hueMillis > hueTime) {
     hueMillis = currentMillis;
     hueCycle(1); // increment the global hue value
   }
-  
+
   // run the currently selected effect every effectDelay milliseconds
   if (currentMillis - effectMillis > effectDelay) {
     effectMillis = currentMillis;
     effectList[currentEffect](); // run the selected effect function
     random16_add_entropy(1); // make the random values a bit more random-ish
   }
-  
+
   // run a fade effect too if the confetti effect is running
   if (effectList[currentEffect] == confetti) fadeAll(1);
-      
+
   FastLED.show(); // send the contents of the led memory to the LEDs
 
 
@@ -162,9 +165,11 @@ void loop()
   if (currentMillis - clockMillis > 1000) {
     clockMillis = currentMillis;
     formatTimeString();
+    //Serial.begin(9600);
     //Serial.println(timeString);
+    //Serial.end();
   }
-  
+
 
 }
 

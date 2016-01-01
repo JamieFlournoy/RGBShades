@@ -271,7 +271,6 @@ void scrollText(byte message, byte style, CRGB fgColor, CRGB bgColor) {
     for (byte i = 0; i < kMatrixWidth; i++) bitBuffer[i] = 0;
   }
 
-
   paletteCycle += 15;
 
   if (currentCharColumn < 5) { // characters are 5 pixels wide
@@ -313,7 +312,6 @@ void scrollText(byte message, byte style, CRGB fgColor, CRGB bgColor) {
 
 }
 
-
 void scrollTextZero() {
   scrollText(99, NORMAL, CHSV((second()*255)/59, 255, 255), CRGB::Black);
 }
@@ -324,5 +322,80 @@ void scrollTextOne() {
 
 void scrollTextTwo() {
   scrollText(2, NORMAL, CRGB::Green, CRGB(0,0,8));
+}
+
+void showMinutesAndSeconds(byte style, CRGB fgColor, CRGB bgColor) {
+  static CRGB currentColor;
+  static byte paletteCycle;
+  static byte bitBuffer[16] = {0};
+  static boolean havePrintedDebugInfo;
+
+  if (effectInit == false) {
+    effectInit = true;
+    effectDelay = 100; // ms
+    havePrintedDebugInfo = false;
+    // zero out the bit buffer
+    for (byte i = 0; i < kMatrixWidth; i++) bitBuffer[i] = 0;
+  }
+
+  
+  paletteCycle += 15; // update the rainbow color
+
+  if (!havePrintedDebugInfo) {
+    Serial.print("timeString: ");
+    Serial.println(timeString);
+  }
+
+  // Fill the bit buffer with seven-segment (3x5) font characters
+  // corresponding to the 4-char string in timeString.
+  for (byte ch = 0; ch < 4; ch++) {
+   	byte bufferIndex = 0;// = pgm_read_byte(SevenSegStartCol[ch]);
+    if (ch == 1) { bufferIndex = 4; }
+    if (ch == 2) { bufferIndex = 9; }
+    if (ch == 3) { bufferIndex = 13; }
+		byte charIndex = timeString[ch] - 48;
+    for (byte col = 0; col < 3; col++) {
+			byte columnBits = pgm_read_byte(SevenSegFont[charIndex] + col);
+			bitBuffer[bufferIndex + col] = columnBits;
+
+      if (!havePrintedDebugInfo) {
+        Serial.print("bufferIndex: ");
+        Serial.println(bufferIndex, DEC);
+        Serial.print("charIndex: ");
+        Serial.println(charIndex, DEC);
+        Serial.print("columnBits: ");
+        Serial.println(columnBits, BIN);
+      }
+    }
+  }
+  havePrintedDebugInfo = true;
+
+	// Render the bit buffer into the LCD array, mapping 1 bits
+	// to the fgColor and 0 bits to the bgColor.
+	CRGB pixelColor;
+	for (byte displayCol = 0; displayCol < kMatrixWidth; displayCol++) {
+    for (byte displayRow = 0; displayRow < 5; displayRow++) { // characters are 5 pixels tall
+      if (bitRead(bitBuffer[displayCol], displayRow) == 1) {
+        if (style == RAINBOW) {
+          pixelColor = ColorFromPalette(currentPalette, paletteCycle + displayRow*16, 255);
+        } else {
+          pixelColor = fgColor;
+        }
+      } else {
+        pixelColor = bgColor;
+      }
+      leds[XY(displayCol, displayRow)] = pixelColor;
+    }
+  }
+  
+
+}
+
+void showMinutesAndSecondsRainbow() {
+  showMinutesAndSeconds(RAINBOW, 0, CRGB::Black);
+}
+
+void showMinutesAndSecondsSolidColor() {
+  showMinutesAndSeconds(NORMAL, CHSV((second()*255)/59, 255, 255), CRGB::Black);
 }
 
