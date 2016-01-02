@@ -200,6 +200,12 @@ void showMinutesAndSecondsRainbow() {
 }
 
 void showMinutesAndSecondsSolidColor() {
+  specialTimeTestMode = false;
+  showMinutesAndSeconds(NORMAL);
+}
+
+void showMinutesAndSecondsSolidColorTestMode() {
+  specialTimeTestMode = true;
   showMinutesAndSeconds(NORMAL);
 }
 

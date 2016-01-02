@@ -51,8 +51,6 @@ byte currentBrightness = STARTBRIGHTNESS; // 0-255 will be scaled to 0-MAXBRIGHT
 
 // Include FastLED library and other useful files
 #include <FastLED.h>
-#include "messages.h"
-// #include "font.h"
 #include "sevenseg.h"
 #include "XYmap.h"
 #include "utils.h"
@@ -89,14 +87,11 @@ void setup() {
 // list of functions that will be displayed
 functionList effectList[] = {
   showMinutesAndSecondsSolidColor,
-//  showMinutesAndSecondsRainbow,
-  // these are activated by special times from the RTC
-  // plasma,
-  // glitter,
+  showMinutesAndSecondsRainbow,
+  showMinutesAndSecondsSolidColorTestMode,
   confetti
 };
-#define TIMER_INDEX 0
-#define CONFETTI_INDEX 1
+#define CONFETTI_INDEX 3
 
 // Timing parameters
 #define cycleTime 15000
@@ -171,16 +166,22 @@ void loop()
     setSpecialTimeCode(t);
     formatTimeString(t);
 
+    // Switch into Confetti mode during CONFETTI_TIME, remembering the
+    // non-confetti mode that was active so it can be resumed when
+    // CONFETTI_TIME is over.
     switch (specialTimeCode) {
-      case COUNTDOWN_TIME:
-        currentEffect = TIMER_INDEX;
-        break;
       case CONFETTI_TIME:
-        currentEffect = CONFETTI_INDEX;
+        if (currentEffect != CONFETTI_INDEX) {
+          savedCurrentEffect = currentEffect;
+          currentEffect = CONFETTI_INDEX;
+        }
         break;
       case NORMAL_TIME:
+      case COUNTDOWN_TIME: // timeString differs, but the effect doesn't.
       default:
-        currentEffect = TIMER_INDEX;
+        if (currentEffect != savedCurrentEffect) {
+          currentEffect = savedCurrentEffect;
+        }
     }
 
     //Serial.begin(9600);

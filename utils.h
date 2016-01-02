@@ -19,6 +19,8 @@ byte savedCurrentEffect = 0; // currentEffect, saved at the top of the minute.
 #define CONFETTI_TIME 2
 byte specialTimeCode = NORMAL_TIME;
 
+boolean specialTimeTestMode = false; // activate specialTimeCode effects every minute instead of every day
+
 CRGBPalette16 currentPalette(RainbowColors_p); // global pallete storage
 
 
@@ -125,86 +127,27 @@ void confirmBlink() {
 
 }
 
-/*
-// Determine flash address of text string
-unsigned int currentStringAddress = 0;
-void selectFlashString(byte string) {
-  currentStringAddress = pgm_read_word(&stringArray[string]);
-}
-
-// Fetch font character bitmap from flash
-byte charBuffer[5] = {0};
-void loadCharBuffer(byte character) {
-  byte mappedCharacter = character;
-  if (mappedCharacter >= 32 && mappedCharacter <= 95) {
-    mappedCharacter -= 32; // subtract font array offset
-  } else if (mappedCharacter >= 97 && mappedCharacter <= 122) {
-    mappedCharacter -= 64; // subtract font array offset and convert lowercase to uppercase
-  } else {
-    mappedCharacter = 96; // unknown character block
-  }
-
-  for (byte i = 0; i < 5; i++) {
-    charBuffer[i] = pgm_read_byte(Font[mappedCharacter]+i);
-  }
-}
-
-// Fetch a character value from a text string in flash
-char loadStringChar(byte string, byte character) {
-
-  if (string == 99) {
-    return timeString.charAt(character);
-  } else {
-    return (char) pgm_read_byte(currentStringAddress + character);
-  }
-}
-*/
-
-
-/*
-void formatTimeString() {
-  timeString = "";
-  t = now();
-
-  timeString += dayStr(weekday(t));
-  timeString += " ";
-  timeString += monthShortStr(month(t));
-  timeString += " ";
-  timeString += String(day(t));
-  timeString += " ";
-
-  if (hourFormat12(t) < 10) timeString += "0";
-  timeString += String(hourFormat12(t));
-  timeString += ":";
-  if (minute(t) < 10) timeString += "0";
-  timeString += String(minute(t));
-  timeString += ":";
-  if (second(t) < 10) timeString += "0";
-  timeString += String(second(t));
-  if (isAM(t)) timeString += " AM  "; else timeString += " PM  ";
-}
-*/
-
 #define NORMAL_TIME 0
 #define COUNTDOWN_TIME 1
 #define CONFETTI_TIME 2
 
 void setSpecialTimeCode(time_t t) {
-//  if (hour(t) == 23 && minute(t) > 50) {
-//    specialTimeCode = COUNTDOWN_TIME;
-//    return;
-//  }
-//  if (hour(t) == 0 && minute(t) == 0) {
-//    specialTimeCode = CONFETTI_TIME;
-//    return;
-//  }
+  // In specialTimeTestMode, Countdown triggers every
+  // minute from :50-00; Confetti triggers every minute from :00-:03.
+  boolean topOfMinute = second(t) < 3;
+  boolean endOfMinute = second(t) > 50;
 
-  // test hack
-  if (second(t) < 3) {
+  // In !specialTimeTestMode, countdown is 23:50:00-midnight and confetti
+  // is from 00:00:00 to 00:00:59.
+  boolean firstMinuteOfDay = hour(t) == 0 && minute(t) == 0;
+  boolean lastTenMinutesOfDay = hour(t) == 23 && minute(t) >= 50;
+
+  if (firstMinuteOfDay || (specialTimeTestMode && topOfMinute)) {
     specialTimeCode = CONFETTI_TIME;
     return;
   }
-  if (second(t) > 50) {
+
+  if (lastTenMinutesOfDay || (specialTimeTestMode && endOfMinute)) {
     specialTimeCode = COUNTDOWN_TIME;
     return;
   }
@@ -223,6 +166,7 @@ void formatTimeString(time_t t) {
   if (specialTimeCode == COUNTDOWN_TIME) {
     padAndAddToTimeString(59 - minute(t));
     padAndAddToTimeString(59 - second(t));
+    return;
   }
 
   padAndAddToTimeString(hourFormat12(t));
