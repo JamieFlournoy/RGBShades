@@ -190,16 +190,15 @@ void formatTimeString() {
 #define CONFETTI_TIME 2
 
 void setSpecialTimeCode(time_t t) {
-  if (hour(t) == 23 && minute(t) > 50) {
-    specialTimeCode = COUNTDOWN_TIME;
-    return;
-  }
-  if (hour(t) == 0 && minute(t) == 0) {
-    specialTimeCode = CONFETTI_TIME;
-    return;
-  }
+//  if (hour(t) == 23 && minute(t) > 50) {
+//    specialTimeCode = COUNTDOWN_TIME;
+//    return;
+//  }
+//  if (hour(t) == 0 && minute(t) == 0) {
+//    specialTimeCode = CONFETTI_TIME;
+//    return;
+//  }
 
-/*
   // test hack
   if (second(t) < 3) {
     specialTimeCode = CONFETTI_TIME;
@@ -209,28 +208,24 @@ void setSpecialTimeCode(time_t t) {
     specialTimeCode = COUNTDOWN_TIME;
     return;
   }
-*/
+
   specialTimeCode = NORMAL_TIME;
+}
+
+void padAndAddToTimeString(byte value) {
+  if (value < 10) timeString += "0";
+  timeString += String(value);
 }
 
 void formatTimeString(time_t t) {
   timeString = "";
 
-  //byte hours12 = hourFormat12(t);
-  byte minutes = minute(t);
-  byte seconds = second(t);
-
   if (specialTimeCode == COUNTDOWN_TIME) {
-    minutes = 60 - minutes;
-    seconds = 60 - seconds;
+    padAndAddToTimeString(59 - minute(t));
+    padAndAddToTimeString(59 - second(t));
   }
 
-  if (minutes < 10) timeString += "0";
-  timeString += String(minutes);
-
-  // timeString += ":";
-
-  if (seconds < 10) timeString += "0";
-  timeString += String(seconds);
+  padAndAddToTimeString(hourFormat12(t));
+  padAndAddToTimeString(minute(t));
 }
 
